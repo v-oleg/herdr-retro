@@ -70,9 +70,36 @@ pub(super) fn render_expanded(
         config,
         agent_scroll,
         hits,
-        |row| row.agent.rows.len(),
+        |row| {
+            if config.retro_sidebar {
+                usize::from(super::retro::card_height(area.width))
+                    + usize::from(row.group_counts.is_some())
+            } else {
+                row.agent.rows.len()
+            }
+        },
         |buffer, rect, row, hits| {
-            super::agent_sidebar::render_agent_row(buffer, rect, &row.agent, config);
+            let mut rect = rect;
+            if config.retro_sidebar {
+                let scene = super::retro::scene_for(row.endpoint_index);
+                if let Some((busy, total)) = row.group_counts {
+                    let header = Rect::new(rect.x, rect.y, rect.width, 1);
+                    super::retro::render_group_header(
+                        buffer,
+                        header,
+                        &row.machine_label,
+                        scene,
+                        busy,
+                        total,
+                    );
+                    rect.y += 1;
+                    rect.height = rect.height.saturating_sub(1);
+                }
+                let key = format!("{}/{}", row.agent.title, row.agent.pane_id);
+                super::retro::render_card(buffer, rect, &row.agent, scene, &key);
+            } else {
+                super::agent_sidebar::render_agent_row(buffer, rect, &row.agent, config);
+            }
             if row.stale {
                 buffer.set_style(
                     rect,
@@ -126,6 +153,9 @@ struct EndpointAgentRow {
     endpoint_id: ClientEndpointId,
     machine_label: String,
     stale: bool,
+    endpoint_index: usize,
+    /// Set on the first row of each run of agents from one machine.
+    group_counts: Option<(usize, usize)>,
     agent: super::agent_sidebar::AgentRow,
 }
 
@@ -156,7 +186,7 @@ fn agent_rows(
         .flatten()
         .collect::<HashMap<_, _>>();
 
-    super::aggregate_navigation::aggregate_agent_rows(
+    let mut rows = super::aggregate_navigation::aggregate_agent_rows(
         endpoints,
         active_endpoint_id,
         config.agent_panel_sort,
@@ -170,8 +200,30 @@ fn agent_rows(
             endpoint_id: row.endpoint.endpoint_id.clone(),
             machine_label: row.endpoint.label.to_owned(),
             stale: row.endpoint.stale(),
+            endpoint_index: endpoints
+                .iter()
+                .position(|endpoint| &endpoint.endpoint_id == row.endpoint.endpoint_id)
+                .unwrap_or(0),
+            group_counts: None,
             agent,
         })
     })
-    .collect()
+    .collect::<Vec<_>>();
+
+    let mut start = 0;
+    while start < rows.len() {
+        let endpoint_id = rows[start].endpoint_id.clone();
+        let run = rows[start..]
+            .iter()
+            .take_while(|row| row.endpoint_id == endpoint_id)
+            .collect::<Vec<_>>();
+        let total = run.len();
+        let busy = run
+            .iter()
+            .filter(|row| row.agent.status == crate::api::schema::AgentStatus::Working)
+            .count();
+        rows[start].group_counts = Some((busy, total));
+        start += total;
+    }
+    rows
 }

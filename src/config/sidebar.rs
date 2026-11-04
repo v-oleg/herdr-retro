@@ -478,6 +478,7 @@ impl Default for SpacesSidebarConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct SidebarConfig {
+    pub retro: bool,
     pub agents: AgentsSidebarConfig,
     pub spaces: SpacesSidebarConfig,
 }

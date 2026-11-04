@@ -258,7 +258,11 @@ pub(super) fn render_expanded(
         workspace_area.x,
         workspace_area.y,
         workspace_area.width,
-        " machines",
+        if config.retro_sidebar {
+            super::retro::SPACES_LABEL
+        } else {
+            " machines"
+        },
         Style::default()
             .fg(palette.overlay0)
             .add_modifier(Modifier::BOLD),
@@ -408,15 +412,27 @@ pub(super) fn render_expanded(
                 let rect = Rect::new(body.x, y, content_width, 1);
                 let collapsed = state.collapsed_endpoints.contains(&endpoint.endpoint_id);
                 let marker = if collapsed { "▸" } else { "▾" };
-                let status_badge = render_endpoint_row(
-                    buffer,
-                    rect,
-                    marker,
-                    endpoint,
-                    collapsed && &endpoint.endpoint_id == state.active_endpoint_id,
-                    state.machine_diagnostics,
-                    palette,
-                );
+                let status_badge = if config.retro_sidebar {
+                    super::retro::render_endpoint_header(
+                        buffer,
+                        rect,
+                        marker,
+                        endpoint,
+                        super::retro::scene_for(*index),
+                        state.machine_diagnostics,
+                        palette,
+                    )
+                } else {
+                    render_endpoint_row(
+                        buffer,
+                        rect,
+                        marker,
+                        endpoint,
+                        collapsed && &endpoint.endpoint_id == state.active_endpoint_id,
+                        state.machine_diagnostics,
+                        palette,
+                    )
+                };
                 hits.machines.push(MachineHit {
                     rect,
                     status_badge,
@@ -481,6 +497,9 @@ pub(super) fn render_expanded(
                     false,
                     palette,
                 );
+                if config.retro_sidebar && endpoint_active && workspace.focused {
+                    super::retro::render_focus_bar(buffer, rect.x + 1, nested);
+                }
                 if endpoint.status != ClientEndpointStatus::Online {
                     buffer.set_style(
                         rect,

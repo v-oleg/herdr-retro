@@ -220,7 +220,11 @@ pub(crate) fn render_sidebar(
         workspace_area.x,
         workspace_area.y,
         workspace_area.width,
-        " spaces",
+        if config.retro_sidebar {
+            super::retro::SPACES_LABEL
+        } else {
+            " spaces"
+        },
         Style::default()
             .fg(palette.overlay0)
             .add_modifier(Modifier::BOLD),
@@ -334,6 +338,9 @@ pub(crate) fn render_sidebar(
             dragged,
             palette,
         );
+        if config.retro_sidebar && workspace.focused {
+            super::retro::render_focus_bar(buffer, rect.x, rect);
+        }
         let group_toggle = render_parent_group_toggle(
             buffer,
             rect,
