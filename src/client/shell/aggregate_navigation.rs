@@ -48,6 +48,7 @@ pub(super) struct AggregateAgentRow<'a> {
     pub(super) recency: u64,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct AggregateAgentTarget {
     pub(super) endpoint_id: ClientEndpointId,
     pub(super) pane_id: String,

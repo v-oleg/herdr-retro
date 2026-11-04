@@ -14,6 +14,7 @@ pub(super) struct AgentRow {
     pub(super) pane_id: String,
     pub(super) status: crate::api::schema::AgentStatus,
     pub(super) focused: bool,
+    pub(super) selected: bool,
     pub(super) rows: Vec<Vec<crate::ui::ResolvedToken>>,
     pub(super) title: String,
     pub(super) subtitle: String,
@@ -57,6 +58,7 @@ pub(super) fn render_agent_panel(
     snapshot: &ClientShellSnapshot,
     config: &ClientShellConfig,
     agent_scroll: &mut usize,
+    selected_pane: Option<&str>,
     hits: &mut ShellHitMap,
 ) {
     if !render_agent_panel_header(
@@ -69,11 +71,16 @@ pub(super) fn render_agent_panel(
         return;
     }
 
-    let rows = agent_rows(snapshot, config, None);
+    let mut rows = agent_rows(snapshot, config, None);
+    for row in &mut rows {
+        row.selected = selected_pane == Some(row.pane_id.as_str());
+    }
+    let reveal = rows.iter().position(|row| row.selected);
     render_agent_list(
         buffer,
         area,
         &rows,
+        reveal,
         snapshot
             .agent_view_label
             .as_ref()
@@ -172,6 +179,7 @@ pub(super) fn render_agent_list<T>(
     buffer: &mut Buffer,
     area: Rect,
     rows: &[T],
+    reveal: Option<usize>,
     empty_message: Option<&str>,
     config: &ClientShellConfig,
     agent_scroll: &mut usize,
@@ -218,6 +226,15 @@ pub(super) fn render_agent_list<T>(
             }
         })
         .collect::<Vec<_>>();
+    if let Some(target) = reveal {
+        *agent_scroll = super::scroll::list_scroll_start_to_reveal(
+            &row_heights,
+            &gaps,
+            body.height,
+            *agent_scroll,
+            target,
+        );
+    }
     let metrics =
         super::scroll::list_scroll_metrics(&row_heights, &gaps, body.height, *agent_scroll);
     hits.agent_max_scroll = metrics.max_offset_from_bottom;
@@ -331,6 +348,7 @@ pub(super) fn agent_row(
         pane_id: agent.pane_id.clone(),
         status: agent.agent_status,
         focused: agent.focused,
+        selected: false,
         rows,
         title: workspace.label.clone(),
         subtitle: agent
@@ -349,7 +367,9 @@ pub(super) fn render_agent_row(
     config: &ClientShellConfig,
 ) {
     let palette = &config.palette;
-    let row_style = if row.focused {
+    let row_style = if row.selected {
+        Style::default().bg(palette.selection_bg)
+    } else if row.focused {
         Style::default().bg(palette.active_row_bg)
     } else {
         Style::default()

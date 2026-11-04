@@ -18,6 +18,7 @@ const ART_PX_ROWS: usize = 12;
 const SPRITE_COLS: usize = 12;
 
 const FOCUS_EDGE: Color = Color::Rgb(232, 165, 60);
+const CURSOR_EDGE: Color = Color::Rgb(122, 162, 247);
 const FOCUS_BG: Color = Color::Rgb(30, 34, 48);
 const BLOCK_EDGE: Color = Color::Rgb(240, 100, 90);
 const STAR: Color = Color::Rgb(225, 215, 240);
@@ -275,7 +276,9 @@ pub(super) fn render_card(
     if rect.width < 3 || rect.height < 2 {
         return;
     }
-    let (edge, background) = if row.status == AgentStatus::Blocked {
+    let (edge, background) = if row.selected {
+        (CURSOR_EDGE, scene.bg)
+    } else if row.status == AgentStatus::Blocked {
         (BLOCK_EDGE, scene.bg)
     } else if row.focused {
         (FOCUS_EDGE, FOCUS_BG)
@@ -501,6 +504,41 @@ pub(super) fn render_endpoint_header(
     badge
 }
 
+pub(super) fn space_icon(status: AgentStatus) -> &'static str {
+    match status {
+        AgentStatus::Working => "▶",
+        AgentStatus::Blocked => "■",
+        AgentStatus::Done => "▣",
+        AgentStatus::Idle => "□",
+        AgentStatus::Unknown => "·",
+    }
+}
+
+/// Terminals have one font, so spaces get their retro look from capitals and glyphs.
+pub(super) fn style_space_rows(
+    rows: Vec<Vec<crate::ui::ResolvedToken>>,
+) -> Vec<Vec<crate::ui::ResolvedToken>> {
+    use crate::ui::ResolvedTokenKind;
+    rows.into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|mut token| {
+                    token.kind = match token.kind {
+                        ResolvedTokenKind::Workspace(text) => {
+                            ResolvedTokenKind::Workspace(text.to_uppercase())
+                        }
+                        ResolvedTokenKind::Branch(text) => {
+                            ResolvedTokenKind::Branch(format!("└ {text}"))
+                        }
+                        kind => kind,
+                    };
+                    token
+                })
+                .collect()
+        })
+        .collect()
+}
+
 pub(super) fn render_focus_bar(buffer: &mut Buffer, x: u16, rect: Rect) {
     for y in rect.y..rect.bottom() {
         put_text(buffer, x, y, 1, "▎", Style::default().fg(FOCUS_EDGE));
@@ -516,6 +554,7 @@ mod tests {
             pane_id: "w1:p1".into(),
             status,
             focused: false,
+            selected: false,
             rows: Vec::new(),
             title: "Tare".into(),
             subtitle: subtitle.into(),

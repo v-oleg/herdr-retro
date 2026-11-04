@@ -50,6 +50,7 @@ pub(super) fn render_expanded(
     active_endpoint_id: &ClientEndpointId,
     config: &ClientShellConfig,
     agent_scroll: &mut usize,
+    selected_agent: Option<&super::aggregate_navigation::AggregateAgentTarget>,
     hits: &mut ShellHitMap,
 ) {
     if !super::agent_sidebar::render_agent_panel_header(
@@ -61,11 +62,18 @@ pub(super) fn render_expanded(
     ) {
         return;
     }
-    let rows = agent_rows(endpoints, active_endpoint_id, config);
+    let mut rows = agent_rows(endpoints, active_endpoint_id, config);
+    for row in &mut rows {
+        row.agent.selected = selected_agent.is_some_and(|target| {
+            target.endpoint_id == row.endpoint_id && target.pane_id == row.agent.pane_id
+        });
+    }
+    let reveal = rows.iter().position(|row| row.agent.selected);
     super::agent_sidebar::render_agent_list(
         buffer,
         area,
         &rows,
+        reveal,
         agent_view_label.map(|_| " no matching agents"),
         config,
         agent_scroll,

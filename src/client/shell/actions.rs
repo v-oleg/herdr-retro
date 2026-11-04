@@ -148,8 +148,14 @@ impl ClientShellState {
                     outcome.repaint = true;
                     return;
                 }
+                if action == crate::input::KeybindAction::NavigateAgents {
+                    self.open_agent_navigation();
+                    outcome.repaint = true;
+                    return;
+                }
                 if action == crate::input::KeybindAction::WorkspacePicker {
                     self.pending_workspace_highlight = None;
+                    self.navigate_agent = None;
                     self.mobile_switcher_scroll = 0;
                     self.reveal_mobile_workspace = false;
                     self.mode = ClientShellMode::Navigate;

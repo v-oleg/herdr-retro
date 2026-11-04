@@ -496,6 +496,7 @@ pub(super) fn render_expanded(
                     state.selected_workspace_id.is_some(),
                     false,
                     palette,
+                    config.retro_sidebar,
                 );
                 if config.retro_sidebar && endpoint_active && workspace.focused {
                     super::retro::render_focus_bar(buffer, rect.x + 1, nested);
@@ -580,6 +581,7 @@ pub(super) fn render_expanded(
         state.active_endpoint_id,
         config,
         state.agent_scroll,
+        state.selected_agent,
         hits,
     );
     hits.sidebar_toggle = Rect::new(

@@ -2862,3 +2862,47 @@ fn retro_sidebar_draws_cards_with_a_header_row_per_machine() {
         assert_eq!(step, expected);
     }
 }
+
+#[test]
+fn agent_navigation_moves_across_machines_and_focuses_on_enter() {
+    let (mut state, remote) = state_with_scrollable_agents();
+    state.open_agent_navigation();
+    assert!(state.agent_navigation_active());
+    let start = state.navigate_agent.clone().unwrap();
+    let targets = super::aggregate_navigation::online_agent_targets(
+        &state.endpoints,
+        &state.active_endpoint_id,
+        state.config.agent_panel_sort,
+    );
+    assert_eq!(targets.len(), 16);
+    assert_eq!(targets.first(), Some(&start));
+
+    let down = crate::input::TerminalKey::new(KeyCode::Down, KeyModifiers::NONE);
+    let mut outcome = ClientShellInput::default();
+    for _ in 0..targets.len() {
+        state.route_agent_navigation_key(&down, &mut outcome);
+    }
+    assert_eq!(
+        state.navigate_agent.as_ref(),
+        Some(&start),
+        "moving past the last agent wraps"
+    );
+
+    let last = targets.last().unwrap().clone();
+    assert_eq!(last.endpoint_id, remote);
+    let up = crate::input::TerminalKey::new(KeyCode::Up, KeyModifiers::NONE);
+    state.route_agent_navigation_key(&up, &mut outcome);
+    assert_eq!(state.navigate_agent.as_ref(), Some(&last));
+
+    let enter = crate::input::TerminalKey::new(KeyCode::Enter, KeyModifiers::NONE);
+    let mut outcome = ClientShellInput::default();
+    state.route_agent_navigation_key(&enter, &mut outcome);
+    assert!(
+        matches!(outcome.actions.as_slice(), [ClientShellAction::ActivateEndpoint {
+            endpoint_id,
+            target: Some(ClientEndpointFocusTarget::Pane(pane)),
+        }] if endpoint_id == &remote && pane == &last.pane_id)
+    );
+    assert_eq!(state.mode, ClientShellMode::Terminal);
+    assert_eq!(state.navigate_agent, None);
+}

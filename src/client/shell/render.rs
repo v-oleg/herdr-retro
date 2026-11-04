@@ -37,6 +37,7 @@ pub(super) fn render_mode_bar(
     update_available: bool,
     keybinds: &LiveKeybindConfig,
     palette: &Palette,
+    agent_navigation: bool,
 ) -> Option<Rect> {
     if (mode == ClientShellMode::Terminal && endpoint_error.is_none()) || pane_area.is_empty() {
         return None;
@@ -95,6 +96,16 @@ pub(super) fn render_mode_bar(
                     (" workspace nav  ".to_owned(), base),
                     (prefix_rhs(&keybinds.keybinds.help), key),
                     (" keybinds".to_owned(), base),
+                ]);
+            }
+            ClientShellMode::Navigate if agent_navigation => {
+                segments.extend([
+                    (" AGENTS ".to_owned(), mode_style),
+                    (" esc back  ".to_owned(), base),
+                    ("↑/↓".to_owned(), key),
+                    (" agent  ".to_owned(), base),
+                    ("enter".to_owned(), key),
+                    (" focus".to_owned(), base),
                 ]);
             }
             ClientShellMode::Navigate => {
@@ -245,6 +256,7 @@ pub(super) struct ShellRenderState<'a> {
     pub(super) sidebar_section_split: f32,
     pub(super) tab_drag_insert_index: Option<usize>,
     pub(super) selected_workspace_id: Option<&'a WorkspaceNavigationTarget>,
+    pub(super) selected_agent: Option<&'a super::aggregate_navigation::AggregateAgentTarget>,
     pub(super) reveal_navigation_workspace: &'a mut bool,
     pub(super) dragged_workspace_id: Option<&'a str>,
     pub(super) workspace_drop_indicator_row: Option<u16>,

@@ -36,6 +36,7 @@ impl ClientShellState {
             Rect::new(0, 1, cols, rows.saturating_sub(2))
         };
         let valid_navigation_target = self.mode == ClientShellMode::Navigate
+            && self.navigate_agent.is_none()
             && self
                 .navigate_workspace_id
                 .as_ref()
@@ -74,6 +75,10 @@ impl ClientShellState {
                 .as_ref()
                 .filter(|_| valid_navigation_target)
                 .or_else(|| pending_workspace_highlight.map(|pending| &pending.target)),
+            selected_agent: self
+                .navigate_agent
+                .as_ref()
+                .filter(|_| self.mode == ClientShellMode::Navigate),
             reveal_navigation_workspace: &mut self.reveal_navigation_workspace,
             dragged_workspace_id: None,
             workspace_drop_indicator_row: None,
@@ -134,6 +139,7 @@ impl ClientShellState {
             false,
             &self.config.keybinds,
             &self.config.palette,
+            self.agent_navigation_active(),
         );
         if let Some(notice) = &self.visible_endpoint_notice {
             self.hits.notification_toast = endpoint_notices::render_notice(
@@ -160,6 +166,7 @@ impl ClientShellState {
         }
         self.last_composed_size = Some((cols, rows));
         let valid_navigation_target = self.mode == ClientShellMode::Navigate
+            && self.navigate_agent.is_none()
             && self
                 .navigate_workspace_id
                 .as_ref()
@@ -230,6 +237,10 @@ impl ClientShellState {
                     .as_ref()
                     .filter(|_| valid_navigation_target)
                     .or_else(|| pending_workspace_highlight.map(|pending| &pending.target)),
+                selected_agent: self
+                    .navigate_agent
+                    .as_ref()
+                    .filter(|_| self.mode == ClientShellMode::Navigate),
                 reveal_navigation_workspace: &mut self.reveal_navigation_workspace,
                 dragged_workspace_id,
                 workspace_drop_indicator_row,
@@ -330,6 +341,7 @@ impl ClientShellState {
                 snapshot.update_available.is_some(),
                 &self.config.keybinds,
                 &self.config.palette,
+                self.agent_navigation_active(),
             )
         };
         if mode_bar == Some(layout.tab_bar) {

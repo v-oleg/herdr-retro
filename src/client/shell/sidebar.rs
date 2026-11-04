@@ -337,6 +337,7 @@ pub(crate) fn render_sidebar(
             state.selected_workspace_id.is_some(),
             dragged,
             palette,
+            config.retro_sidebar,
         );
         if config.retro_sidebar && workspace.focused {
             super::retro::render_focus_bar(buffer, rect.x, rect);
@@ -443,6 +444,7 @@ pub(crate) fn render_sidebar(
         snapshot,
         config,
         state.agent_scroll,
+        state.selected_agent.map(|target| target.pane_id.as_str()),
         hits,
     );
 
@@ -708,7 +710,13 @@ pub(in crate::client::shell) fn render_workspace_rows(
     navigating: bool,
     dragged: bool,
     palette: &Palette,
+    retro: bool,
 ) {
+    let rows = if retro {
+        super::retro::style_space_rows(rows)
+    } else {
+        rows
+    };
     for (row_index, row) in rows.iter().enumerate() {
         let y = area.y + row_index as u16;
         if y >= area.bottom() {
@@ -760,7 +768,11 @@ pub(in crate::client::shell) fn render_workspace_rows(
         let spans = crate::ui::resolved_token_spans(
             row,
             (
-                status_icon(status, indicators),
+                if retro {
+                    super::retro::space_icon(status)
+                } else {
+                    status_icon(status, indicators)
+                },
                 Style::default().fg(status_color(status, palette)),
             ),
             Style::default().fg(status_color(status, palette)),

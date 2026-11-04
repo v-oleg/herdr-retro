@@ -761,6 +761,11 @@ impl ClientShellState {
             return;
         }
 
+        if self.agent_navigation_active() {
+            self.route_agent_navigation_key(key, outcome);
+            return;
+        }
+
         if self
             .config
             .keybinds
@@ -933,6 +938,7 @@ impl ClientShellState {
     }
 
     fn cancel_navigate(&mut self, outcome: &mut ClientShellInput) {
+        self.navigate_agent = None;
         self.mode = self.copy_or_terminal_mode();
         self.navigate_workspace_id = None;
         outcome.repaint = true;
