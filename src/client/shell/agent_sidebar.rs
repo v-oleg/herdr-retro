@@ -15,6 +15,8 @@ pub(super) struct AgentRow {
     pub(super) status: crate::api::schema::AgentStatus,
     pub(super) focused: bool,
     pub(super) rows: Vec<Vec<crate::ui::ResolvedToken>>,
+    pub(super) title: String,
+    pub(super) subtitle: String,
 }
 
 pub(super) fn ordered_agent_pane_ids(
@@ -79,10 +81,21 @@ pub(super) fn render_agent_panel(
         config,
         agent_scroll,
         hits,
-        |row| row.rows.len(),
+        |row| {
+            if config.retro_sidebar {
+                usize::from(super::retro::card_height(area.width))
+            } else {
+                row.rows.len()
+            }
+        },
         |buffer, rect, row, hits| {
             hits.agents.push((rect, row.pane_id.clone()));
-            render_agent_row(buffer, rect, row, config);
+            if config.retro_sidebar {
+                let key = format!("{}/{}", row.title, row.pane_id);
+                super::retro::render_card(buffer, rect, row, super::retro::scene_for(0), &key);
+            } else {
+                render_agent_row(buffer, rect, row, config);
+            }
         },
     );
 }
@@ -113,7 +126,11 @@ pub(super) fn render_agent_panel_header(
         area.x,
         area.y + 1,
         area.width,
-        " agents",
+        if config.retro_sidebar {
+            super::retro::AGENTS_LABEL
+        } else {
+            " agents"
+        },
         Style::default()
             .fg(config.palette.overlay0)
             .add_modifier(Modifier::BOLD),
@@ -315,6 +332,13 @@ pub(super) fn agent_row(
         status: agent.agent_status,
         focused: agent.focused,
         rows,
+        title: workspace.label.clone(),
+        subtitle: agent
+            .terminal_title_stripped
+            .as_deref()
+            .or(agent_label)
+            .unwrap_or_default()
+            .to_owned(),
     })
 }
 

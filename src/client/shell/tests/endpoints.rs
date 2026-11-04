@@ -2387,3 +2387,26 @@ fn navigator_foreign_tab_selection_keeps_the_tab_target() {
         }] if activated == &endpoint_id && tab_id == "tab_1"
     ));
 }
+
+#[test]
+fn retro_sidebar_draws_cards_with_a_header_row_per_machine() {
+    let (mut state, _) = state_with_scrollable_agents();
+    state.config.retro_sidebar = true;
+    state.sidebar_width = 38;
+    state.config.sidebar_max_width = 38;
+    state.agent_scroll = 0;
+    state.compose(120, 200).unwrap();
+    let hits = state.hits.endpoint_agents.clone();
+    assert!(hits.len() > 2, "expected several cards, got {}", hits.len());
+    assert!(hits.iter().all(|(rect, _, _)| rect.height == 8));
+    let group_starts = hits
+        .windows(2)
+        .filter(|pair| pair[0].1 != pair[1].1)
+        .collect::<Vec<_>>();
+    assert_eq!(group_starts.len(), 1, "agents should group by machine");
+    for pair in hits.windows(2) {
+        let step = pair[1].0.y - pair[0].0.y;
+        let expected = if pair[0].1 == pair[1].1 { 8 } else { 9 };
+        assert_eq!(step, expected);
+    }
+}

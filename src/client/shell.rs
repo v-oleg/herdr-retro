@@ -28,6 +28,7 @@ mod notifications;
 mod overlay_input;
 mod preferences;
 mod render;
+mod retro;
 mod scroll;
 mod settings;
 mod state;
