@@ -4,17 +4,20 @@
 #   herdr-retro-upgrade              upgrade to the newest release
 #   herdr-retro-upgrade v0.9.5       upgrade to a specific release
 #   herdr-retro-upgrade --no-handoff leave the running server alone
+#   herdr-retro-upgrade --force      rebuild even if already up to date
 #
 # Stops without installing anything if the rebase conflicts or the tests fail.
 set -euo pipefail
 
 target=""
 handoff=1
+force=0
 for arg in "$@"; do
     case "$arg" in
         --no-handoff) handoff=0 ;;
+        --force) force=1 ;;
         v*) target="$arg" ;;
-        *) echo "usage: herdr-retro-upgrade [vX.Y.Z] [--no-handoff]" >&2; exit 2 ;;
+        *) echo "usage: herdr-retro-upgrade [vX.Y.Z] [--no-handoff] [--force]" >&2; exit 2 ;;
     esac
 done
 
@@ -38,6 +41,11 @@ if [ -z "$target" ]; then
 fi
 
 if [ "$base" = "$target" ]; then
+    installed="v$("$bin" --version 2>/dev/null | awk '{print $2}')"
+    if [ "$force" = 0 ] && [ "$installed" = "$target" ]; then
+        echo "==> Already up to date on $target, nothing to do (--force to rebuild)"
+        exit 0
+    fi
     echo "==> Already based on $target, rebuilding"
 else
     echo "==> Moving the patch from $base to $target"
