@@ -1,3 +1,12 @@
+> [!NOTE]
+> **herdr-retro is an unofficial personal build of [herdr](https://github.com/herdrdev/herdr), not affiliated with its authors.** The `retro-sidebar` branch modifies herdr under the Apache-2.0 licence (see [LICENSE](LICENSE)), and the rest of this README is herdr's own.
+>
+> Changes from herdr, both off until configured:
+> - `[ui.sidebar] retro = true` draws a retro sidebar with pixel-art agent cards.
+> - `[keys] navigate_agents = "prefix+t"` adds a mode for moving between agents.
+>
+> It also adds `scripts/retro-upgrade.sh` and removes the Dependabot config. It's lightly tested, and not yet on macOS. For support with this build, don't report issues to herdr.
+
 # herdr
 
 
